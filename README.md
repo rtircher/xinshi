@@ -14,6 +14,12 @@ You will need [Leiningen][1] 1.7.0 or above installed.
 To start to webserver and db for the app, run:
     ./go
 
+## TODO
+
+* Config files for different environments
+** remove the request logger in prod environment
+* extract to logger middleware in it's own project
+
 
 ## License
 
