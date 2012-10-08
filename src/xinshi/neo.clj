@@ -2,7 +2,8 @@
   (:require [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.nodes :as node]
             [clojurewerkz.neocons.rest.relationships :as rel]
-            [clojurewerkz.neocons.rest.cypher :as cypher]))
+            [clojurewerkz.neocons.rest.cypher :as cypher])
+  (:import [clojure.lang ExceptionInfo]))
 
 (nr/connect! "http://localhost:7474/db/data/")
 (def root (node/get 0))
@@ -33,8 +34,13 @@
     (rel/create root node :user)
     (make-user node)))
 
+;; Macro ensure found (that deals with the 404 exception
+
 (defn find-user [id]
-  (make-user (node/get id)))
+  (try (make-user (node/get id))
+       (catch ExceptionInfo e
+         (when-not (= 404 (:status (:object  (.getData e))))
+           (throw e)))))
 
 
 (defn add-message-to! [user from-user sent-date text]
