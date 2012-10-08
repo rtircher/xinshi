@@ -10,9 +10,10 @@ You will need [Leiningen][1] 1.7.0 or above installed.
 
 ## Running
 
-To start a web server for the application, run:
 
-    lein ring server
+To start to webserver and db for the app, run:
+    ./go
+
 
 ## License
 
