@@ -1,0 +1,25 @@
+#!/bin/bash
+
+NEO4J_SRC="http://dist.neo4j.org/neo4j-community-1.8-unix.tar.gz"
+NEO4J_TARBALL="tools/neo4j-community-1.8-unix.tar.gz"
+NEO4J_HOME="`pwd`/tools/neo4j-community-1.8"
+NEO4J_DB="$NEO4J_HOME/data/graph.db"
+RET_CODE=0
+
+if [ ! -e tools ]; then
+  mkdir tools
+  RET_CODE=$?
+fi
+
+if [ $RET_CODE == 0 ] && [ ! -f $NEO4J_TARBALL ]; then
+  echo "Downloading neo4j"
+  curl $NEO4J_SRC -o $NEO4J_TARBALL
+  RET_CODE=$?
+fi
+
+if [ $RET_CODE == 0 ] && [ ! -d $NEO4J_HOME ]; then
+  echo "Extracting neo4j"
+  tar xzf $NEO4J_TARBALL -C tools
+  RET_CODE=$?
+fi
+

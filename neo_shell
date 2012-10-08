@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source neo_setup
+
+$NEO4J_HOME/bin/neo4j-shell -path $NEO4J_DB -v $1
