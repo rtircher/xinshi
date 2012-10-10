@@ -12,6 +12,12 @@
 (defrecord User [id first-name last-name email])
 (defrecord Message [id from-uid to-uid sent-date text])
 
+(defmacro ^:private ensure-found [body]
+  `(try ~body
+       (catch ExceptionInfo e#
+         (when-not (= 404 (:status (:object  (.getData e#))))
+           (throw e#)))))
+
 (defn- make-user [neo-props]
   (let [data (:data neo-props)]
     (User. (:id neo-props)
@@ -34,13 +40,8 @@
     (rel/create root node :user)
     (make-user node)))
 
-;; Macro ensure found (that deals with the 404 exception
-
 (defn find-user [id]
-  (try (make-user (node/get id))
-       (catch ExceptionInfo e
-         (when-not (= 404 (:status (:object  (.getData e))))
-           (throw e)))))
+  (ensure-found (make-user (node/get id))))
 
 
 (defn add-message-to! [user from-user sent-date text]
