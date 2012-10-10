@@ -33,14 +33,26 @@
     (when (> (count error-message) 0)
       error-message)))
 
+(defn- validate-all-messages-for [from-uid from-user to-uid to-user]
+  (let [error-message (-> (user-required from-uid "from-uid" from-user)
+                          (str (user-required to-uid "to-uid" to-user)))]
+    (when (> (count error-message) 0)
+      error-message)))
+
 (defroutes messages-routes
-  (POST "/" {params :params}
-    (let [{:keys [sent-date text from-uid to-uid]} params
-          to-user   (and to-uid   (find-user (read-string to-uid)))
+  (POST "/" [sent-date text from-uid to-uid]
+    (let [to-user   (and to-uid   (find-user (read-string to-uid)))
           from-user (and from-uid (find-user (read-string from-uid)))]
       (if-let [error-message (validate-add-message sent-date text from-uid from-user to-uid to-user)]
         (json {:error-message error-message} 400)
-        (json (add-message-to! from-user to-user sent-date text))))))
+        (json (add-message-to! from-user to-user sent-date text)))))
+
+  (GET "/" [from-uid to-uid]
+    (let [from-user (and from-uid (find-user (read-string from-uid)))
+          to-user   (and to-uid   (find-user (read-string to-uid)))]
+      (if-let [error-message (validate-all-messages-for from-uid from-user to-uid to-user)]
+        (json {:error-message error-message} 400)
+        (json (all-messages-for from-user to-user))))))
 
 
 (defroutes api-routes

@@ -1,8 +1,8 @@
 (ns xinshi.neo
-  (:require [clojurewerkz.neocons.rest :as nr]
-            [clojurewerkz.neocons.rest.nodes :as node]
+  (:require [clojurewerkz.neocons.rest               :as nr]
+            [clojurewerkz.neocons.rest.nodes         :as node]
             [clojurewerkz.neocons.rest.relationships :as rel]
-            [clojurewerkz.neocons.rest.cypher :as cypher])
+            [clojurewerkz.neocons.rest.cypher        :as cypher])
   (:import [clojure.lang ExceptionInfo]))
 
 (nr/connect! "http://localhost:7474/db/data/")
@@ -21,21 +21,21 @@
 (defn- make-user [neo-props]
   (let [data (:data neo-props)]
     (User. (:id neo-props)
-           (:first-name data)
-           (:last-name data)
+           (:first_name data)
+           (:last_name data)
            (:email data))))
 
 (defn- make-message [neo-props]
-  (let [data (:data neo-props)]
-    (Message. (:id neo-props)
-              ""
-              ""
-              (:sent-date data)
-              (:text data))))
+  (let [props (into {} (map (fn [[k v]] [(keyword k) v]) neo-props))]
+    (Message. (:id props)
+              (:from-uid props)
+              (:to-uid props)
+              (:sent_date props)
+              (:text props))))
 
 (defn create-user! [first-name last-name email]
-  (let [node (node/create {:first-name first-name
-                           :last-name last-name
+  (let [node (node/create {:first_name first-name
+                           :last_name last-name
                            :email email})]
     (rel/create root node :user)
     (make-user node)))
@@ -43,21 +43,30 @@
 (defn find-user [id]
   (ensure-found (make-user (node/get id))))
 
+(defn create-node [props]
+  (let [node (node/create props)]
+    (assoc (:data node) :id (:id node))))
 
-(defn add-message-to! [user from-user sent-date text]
-  (let [message-node (node/create {:text text
-                                   :sent-date sent-date})]
+(defn add-message-to! [from-user to-user sent-date text]
+  (let [message-node (create-node {:text text
+                                   :sent_date sent-date})]
     (rel/create root message-node :message)
-    (rel/create message-node user :to)
-    (rel/create message-node from-user :from)
-    (make-message message-node)))
+    (rel/create message-node to-user :to)
+    (rel/create from-user message-node :from)
+    (make-message (assoc message-node :from-uid (:id from-user) :to-uid (:id to-user)))))
 
-(defn- all-messages-for [user-from user-to]
-  (cypher/tquery
-   "START user_from=node({fid})
-    MATCH user_from-[:from]->m-[:to]->user_to
-    WHERE usert_to.id={tid}
-    RETURN m
-    ORDER BY m.sent-date"
-   {:fid (:id user-from)
-    :tid (:id user-to)}))
+(defn all-messages-for [from-user to-user]
+  (map make-message
+       (cypher/tquery
+        "START user_from=node({fuid}), user_to=node({tuid}) 
+         MATCH user_from-[:from]->message-[:to]->user_to
+         RETURN id(message) AS id,
+           id(user_from) AS from_uid,
+           id(user_to) AS to_uid,
+           message.sent_date AS sent_date,
+           message.text AS text
+         ORDER BY message.sent_date ASC"
+           {:fuid (:id from-user)
+            :tuid (:id to-user)})))
+;; -> should to query return messages from and to both user to each other?
+;; Look at morph into for result of cypher query
